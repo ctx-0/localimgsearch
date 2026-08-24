@@ -1,0 +1,3 @@
+- Use expert subagents for delegating tasks.
+- You can use upto 10 subagents at a time.
+- Use conventional commits.
