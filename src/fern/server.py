@@ -9,9 +9,6 @@ from pathlib import Path
 from typing import Optional
 from urllib.parse import quote, urlencode
 
-# Disable tokenizers parallelism warning
-os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
-
 from fastapi import FastAPI, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse
@@ -19,6 +16,7 @@ from fastapi.templating import Jinja2Templates
 import uvicorn
 
 import fern
+from fern.diagnostics import debug_enabled
 from fern.embed import (
     AVAILABLE_MODELS,
     CHROMA_DB_PATH,
@@ -51,6 +49,38 @@ templates = Jinja2Templates(directory=str(templates_dir))
 # Global instance
 searcher: Optional[LocalImageSearch] = None
 model_name: str = DEFAULT_MODEL
+
+
+def format_startup_summary(*, host, port, db_path, searcher, stats, reranker=None):
+    """Return the concise readiness summary shown after initialization."""
+    total_assets = int(stats.get("total_images", 0))
+    total_units = int(stats.get("total_visual_units", total_assets))
+    library = (
+        f"{total_assets:,} indexed asset{'s' if total_assets != 1 else ''}"
+        if total_assets
+        else "No indexed assets — add a folder from Library"
+    )
+    rows = [
+        ("Address", f"http://{host}:{port}"),
+        ("Device", str(searcher.device).upper()),
+        ("Model", str(searcher.model_name)),
+        ("Library", library),
+    ]
+    if total_units != total_assets:
+        rows.append(("Search units", f"{total_units:,}"))
+    rows.extend(
+        [
+            ("Collection", str(stats.get("collection_name", "—"))),
+            ("Database", str(db_path)),
+        ]
+    )
+    if reranker is not None:
+        rows.append(("Reranker", str(reranker.model_name)))
+    label_width = max(len(label) for label, _ in rows)
+    details = "\n".join(
+        f"  {label:<{label_width}}  {value}" for label, value in rows
+    )
+    return f"Fern is ready\n{details}\n\nPress Ctrl+C to stop."
 
 
 def format_search_results(results):
@@ -542,6 +572,11 @@ def main():
 
     parser = argparse.ArgumentParser(description="CLIP Image Search Web UI")
     parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Show dependency warnings and diagnostic output",
+    )
+    parser.add_argument(
         "--port", "-p", type=int, default=5000, help="Port to run on (default: 5000)"
     )
     parser.add_argument(
@@ -593,11 +628,12 @@ def main():
 
     model_name = args.model
 
-    print("Starting Fern...")
-    print(f"   Retrieval model: {args.model}")
-    if args.reranker:
-        print(f"   Reranker model: {args.reranker}")
-    print(f"   DB Path: {args.db_path}")
+    print("Starting Fern…", flush=True)
+    if debug_enabled():
+        print(f"  Retrieval model: {args.model}")
+        if args.reranker:
+            print(f"  Reranker model: {args.reranker}")
+        print(f"  Database: {args.db_path}")
 
     try:
         reranker = None
@@ -612,26 +648,33 @@ def main():
             db_path=args.db_path,
             reranker=reranker,
         )
-        print("[OK] Retrieval model loaded")
-
         if reranker is not None:
-            print("   Loading reranker...")
+            if debug_enabled():
+                print("Loading reranker...")
             reranker.preload()
-            print("[OK] Reranker model loaded")
+            if debug_enabled():
+                print("[OK] Reranker model loaded")
 
         stats = searcher.get_stats()
-        if stats["total_images"] > 0:
-            print(f"[OK] Database loaded: {stats['total_images']} images")
-            print(f"   Collection: {stats['collection_name']}")
-        else:
-            print("   No images indexed. Use Index button to create an index.")
 
     except Exception as e:
-        print(f"[ERROR] Failed to initialize: {e}")
+        if debug_enabled():
+            raise
+        print(f"Fern could not start: {e}", file=sys.stderr)
         sys.exit(1)
 
-    print(f"   URL: http://{args.host}:{args.port}")
-    print("   Press Ctrl+C to stop\n")
+    print()
+    print(
+        format_startup_summary(
+            host=args.host,
+            port=args.port,
+            db_path=args.db_path,
+            searcher=searcher,
+            stats=stats,
+            reranker=reranker,
+        )
+    )
+    print()
 
     uvicorn.run(
         app,

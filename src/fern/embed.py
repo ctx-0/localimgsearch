@@ -23,8 +23,12 @@ from PIL import Image, ImageOps
 from tqdm import tqdm
 from transformers import AutoModel, AutoProcessor
 
+from fern.diagnostics import configure_transformers_output, debug_enabled
 from fern.media import DEFAULT_POLICY, SamplingPolicy, extract_visual_units
 from fern.reranker import NoOpReranker, Reranker, SearchCandidate
+
+
+configure_transformers_output()
 
 AVAILABLE_MODELS = [
     "openai/clip-vit-base-patch32",
@@ -117,18 +121,16 @@ class LocalImageSearch:
 
     def _load_model(self) -> None:
         """Load CLIP model and processor using Auto classes."""
-        print(f"Loading CLIP model ({self.model_name}) on {self.device}...")
+        if debug_enabled():
+            print(f"Loading CLIP model ({self.model_name}) on {self.device}...")
 
-        try:
-            self.model = AutoModel.from_pretrained(
-                self.model_name, low_cpu_mem_usage=True, torch_dtype=torch.float32
-            ).to(self.device)
-            self.processor = AutoProcessor.from_pretrained(self.model_name)
-            self.model.eval()
+        self.model = AutoModel.from_pretrained(
+            self.model_name, low_cpu_mem_usage=True, dtype=torch.float32
+        ).to(self.device)
+        self.processor = AutoProcessor.from_pretrained(self.model_name)
+        self.model.eval()
+        if debug_enabled():
             print(f"[OK] Model loaded on {self.device}")
-        except Exception as e:
-            print(f"[ERROR] Error loading model: {e}")
-            raise
 
     def _extract_tensor(
         self, model_output: Union[torch.Tensor, object]

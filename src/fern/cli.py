@@ -9,6 +9,7 @@ from fern.embed import (
     LocalImageSearch,
     list_available_models,
 )
+from fern.diagnostics import debug_enabled
 from fern.reranker import DEFAULT_MODEL as DEFAULT_RERANKER_MODEL
 from fern.reranker import Qwen3VLReranker
 
@@ -34,10 +35,11 @@ def cmd_embed(args):
         sys.exit(1)
     
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"[INFO] Using device: {device}")
-    if device == "cpu":
-        print("[WARNING] Running on CPU - this will be slow. Consider using a CUDA-enabled PyTorch for GPU acceleration.")
-    print(f"Loading model: {args.model}")
+    if debug_enabled():
+        print(f"[INFO] Using device: {device}")
+        if device == "cpu":
+            print("[WARNING] Running on CPU - this will be slow. Consider using a CUDA-enabled PyTorch for GPU acceleration.")
+        print(f"Loading model: {args.model}")
     
     try:
         searcher = LocalImageSearch(
@@ -75,10 +77,11 @@ def cmd_search(args):
         sys.exit(1)
     
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"[INFO] Using device: {device}")
-    if device == "cpu":
-        print("[WARNING] Running on CPU - this will be slow. Consider using a CUDA-enabled PyTorch for GPU acceleration.")
-    print(f"Loading model: {args.model}")
+    if debug_enabled():
+        print(f"[INFO] Using device: {device}")
+        if device == "cpu":
+            print("[WARNING] Running on CPU - this will be slow. Consider using a CUDA-enabled PyTorch for GPU acceleration.")
+        print(f"Loading model: {args.model}")
     
     try:
         searcher = LocalImageSearch(
@@ -115,10 +118,11 @@ def cmd_stats(args):
     import torch
     
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"[INFO] Using device: {device}")
-    if device == "cpu":
-        print("[WARNING] Running on CPU - this will be slow. Consider using a CUDA-enabled PyTorch for GPU acceleration.")
-    print(f"Loading model: {args.model}")
+    if debug_enabled():
+        print(f"[INFO] Using device: {device}")
+        if device == "cpu":
+            print("[WARNING] Running on CPU - this will be slow. Consider using a CUDA-enabled PyTorch for GPU acceleration.")
+        print(f"Loading model: {args.model}")
     
     try:
         searcher = LocalImageSearch(
@@ -142,15 +146,18 @@ def cmd_serve(args):
     import torch
     
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    print(f"[INFO] Using device: {device}")
-    if device == "cpu":
-        print("[WARNING] Running on CPU - this will be slow. Consider using a CUDA-enabled PyTorch for GPU acceleration.")
+    if debug_enabled():
+        print(f"[INFO] Using device: {device}")
+        if device == "cpu":
+            print("[WARNING] Running on CPU - this will be slow. Consider using a CUDA-enabled PyTorch for GPU acceleration.")
     
     from fern.server import main as web_main
     
     # Pass args to server
     import sys
     sys.argv = [sys.argv[0]]  # Reset argv
+    if args.debug:
+        sys.argv.append("--debug")
     if args.model != DEFAULT_MODEL:
         sys.argv.extend(["--model", args.model])
     if args.db_path != CHROMA_DB_PATH:
@@ -184,6 +191,11 @@ Examples:
         """
     )
     
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="Show dependency warnings and diagnostic output",
+    )
     parser.add_argument(
         "--model",
         "-m",
@@ -299,7 +311,10 @@ Examples:
     )
     serve_parser.set_defaults(func=cmd_serve)
     
-    args = parser.parse_args()
+    argv = sys.argv[1:]
+    debug_requested = "--debug" in argv
+    args = parser.parse_args([argument for argument in argv if argument != "--debug"])
+    args.debug = debug_requested
     
     if args.list_models:
         list_available_models()
