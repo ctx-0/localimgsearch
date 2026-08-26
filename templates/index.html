@@ -331,66 +331,7 @@
       .field-hint{left:10px;bottom:10px}.field-zoom{right:10px;bottom:7px}
     }
 
-    /* Scroll layouts expose the full result set as one continuous gallery. */
-    html[data-layout="river"],html[data-layout="contact-sheet"]{height:auto;overflow-y:auto}
     html.locked{overflow:hidden}
-    body[data-layout="river"],body[data-layout="contact-sheet"]{height:auto;min-height:100vh;overflow:visible}
-    body[data-layout="river"] main,body[data-layout="contact-sheet"] main{
-      height:auto;min-height:calc(100dvh - 82px);overflow:visible
-    }
-    body[data-layout="river"] .gallery-wrap,body[data-layout="contact-sheet"] .gallery-wrap{
-      height:auto;min-height:calc(100dvh - 82px);display:block;
-      padding:36px clamp(18px,3vw,52px) 96px
-    }
-    body[data-layout="river"] .gallery,body[data-layout="contact-sheet"] .gallery{
-      width:min(1600px,94vw);height:auto;min-height:0;margin:0 auto;padding:0;overflow:visible
-    }
-    body[data-layout="river"].locked,body[data-layout="contact-sheet"].locked{overflow:hidden}
-
-    body[data-layout="river"] .gallery,body[data-layout="contact-sheet"] .gallery{
-      display:block
-    }
-    .query-anchor-strip{display:flex;align-items:center;min-height:116px;margin-bottom:24px;padding-bottom:24px;border-bottom:1px solid var(--line)}
-    body[data-layout="river"] .query-anchor-strip .card,
-    body[data-layout="contact-sheet"] .query-anchor-strip .card{
-      width:156px;height:104px;flex:none;aspect-ratio:auto;
-      grid-column:auto!important;grid-row:auto!important;overflow:visible
-    }
-    .query-anchor-strip .card-media{height:100%;overflow:hidden}
-    .query-anchor-strip .card img{object-fit:contain!important}
-    body[data-layout="river"] .river-stream{display:flex;flex-direction:column;gap:12px}
-    body[data-layout="river"] .river-row{display:flex;gap:12px;height:var(--river-height)}
-    body[data-layout="river"] .card{
-      width:var(--river-width);height:var(--river-height);flex:0 0 var(--river-width);
-      grid-column:auto!important;grid-row:auto!important;overflow:visible
-    }
-    body[data-layout="river"] .card-media{height:100%;overflow:hidden}
-
-    body[data-layout="contact-sheet"] .contact-stream{
-      display:grid;grid-template-columns:repeat(8,minmax(0,1fr));
-      grid-template-rows:none;grid-auto-rows:auto;gap:8px
-    }
-    body[data-layout="contact-sheet"] .card{
-      width:auto;height:auto;aspect-ratio:4/3;grid-column:auto!important;
-      grid-row:auto!important;overflow:hidden
-    }
-    body[data-layout="contact-sheet"] .card-media{height:100%;overflow:hidden}
-    body[data-layout="contact-sheet"] .card img{object-fit:cover!important}
-
-    @media(max-width:800px){
-      body[data-layout="river"] main,body[data-layout="contact-sheet"] main{min-height:calc(100dvh - 64px)}
-      body[data-layout="river"] .gallery-wrap,body[data-layout="contact-sheet"] .gallery-wrap{
-        min-height:calc(100dvh - 64px);padding:26px 14px 72px
-      }
-      .query-anchor-strip{min-height:94px;margin-bottom:18px;padding-bottom:18px}
-      body[data-layout="river"] .query-anchor-strip .card,
-      body[data-layout="contact-sheet"] .query-anchor-strip .card{width:126px;height:84px}
-      body[data-layout="river"] .river-stream,body[data-layout="river"] .river-row{gap:8px}
-      body[data-layout="contact-sheet"] .contact-stream{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
-    }
-    @media(max-width:480px){
-      body[data-layout="contact-sheet"] .contact-stream{grid-template-columns:repeat(3,minmax(0,1fr))}
-    }
   </style>
 </head>
 <body data-layout="composition">
@@ -486,9 +427,8 @@
     function initTheme(){let saved="";try{saved=localStorage.getItem("local-theme")||""}catch{}document.documentElement.dataset.theme=saved==="dark"?"dark":"light";updateThemeUI()}
     function toggleTheme(){const next=document.documentElement.dataset.theme==="dark"?"light":"dark";document.documentElement.dataset.theme=next;try{localStorage.setItem("local-theme",next)}catch{}updateThemeUI();requestFieldDraw()}
     function activeLayout(){if(state.mode==="home")return state.homeLayout;if(["text","image"].includes(state.mode))return state.searchLayout;return "composition"}
-    function isScrollLayout(layout){return ["river","contact-sheet"].includes(layout||activeLayout())}
-    function isAllResultsLayout(layout){return ["field","river","contact-sheet"].includes(layout||activeLayout())}
-    function syncLayout(){const previous=document.body.dataset.layout,next=activeLayout();document.body.dataset.layout=next;document.documentElement.dataset.layout=next;if(isScrollLayout(previous)&&!isScrollLayout(next))scrollTo(0,0)}
+    function isAllResultsLayout(layout){return (layout||activeLayout())==="field"}
+    function syncLayout(){const next=activeLayout();document.body.dataset.layout=next;document.documentElement.dataset.layout=next}
     function setMode(mode){state.mode=mode;document.body.dataset.mode=mode;syncLayout();const gallery=["home","text","image"].includes(mode);el.intro.hidden=true;el.galleryWrap.hidden=!gallery;el.duplicatesView.hidden=mode!=="duplicates";el.loading.hidden=mode!=="loading";el.empty.hidden=mode!=="empty";el.bar.hidden=mode!=="duplicates";el.rerank.classList.remove("visible");if(!gallery)pageUI.root.hidden=true}
     function configure(){el.meta.textContent="";el.shuffle.hidden=true;el.sort.hidden=true;el.topK.hidden=true}
     function showEmpty(title,copy,action){setMode("empty");el.emptyTitle.textContent=title;el.emptyCopy.textContent=copy;el.emptyBtn.textContent=action||"Open library"}
@@ -503,18 +443,16 @@
     ];
     const textSlots=[[5,2,4,4],[1,1,2,2],[3,1,2,2],[2,3,2,2],[10,1,2,2],[12,1,1,2],[10,3,2,2],[12,3,1,2],[1,5,2,2],[3,5,2,2],[10,5,2,2],[12,5,1,2]];
     const imageSlots=[[5,2,4,4],[2,1,2,2],[4,1,1,2],[9,1,2,2],[11,2,2,2],[2,4,2,2],[3,6,2,1],[9,5,2,2],[11,5,2,2]];
-    const layouts=[{id:"composition",label:"composition"},{id:"field",label:"field"},{id:"fixed-grid",label:"fixed grid"},{id:"river",label:"river"},{id:"contact-sheet",label:"contact sheet"}];
+    const layouts=[{id:"composition",label:"composition"},{id:"field",label:"field"},{id:"fixed-grid",label:"fixed grid"}];
     function pageSize(){if(activeLayout()==="fixed-grid"){const capacity=innerWidth<=800?8:24;return state.mode==="image"?capacity-1:capacity}if(innerWidth<=800)return state.mode==="image"?3:(state.mode==="home"?9:8);return state.mode==="image"?8:12}
     function placeCard(card,index){const slots=state.mode==="home"?homeTemplates[state.homeTemplate]:state.mode==="text"?textSlots:imageSlots,slot=slots[index]||slots[slots.length-1];card.style.setProperty("--column",slot[0]+" / span "+slot[2]);card.style.setProperty("--row",slot[1]+" / span "+slot[3])}
     function cycleLayout(){const key=state.mode==="home"?"homeLayout":["text","image"].includes(state.mode)?"searchLayout":"";if(!key)return;const index=layouts.findIndex(layout=>layout.id===state[key]);state[key]=layouts[(index+1)%layouts.length].id;syncLayout();state.page=0;scrollTo(0,0);renderInitial()}
     function activateItem(item,index,event){if(state.selectMode){toggleSelected(item.path);return}if(event&&(event.ctrlKey||event.metaKey)){event.preventDefault();openLightbox(index,state.displayItems);return}if(state.mode==="image"&&item._anchor){openLightbox(index,state.displayItems);return}searchImage({path:item.path,src:source(item,false)})}
-    function cardFor(item,index){const card=document.createElement("article"),itemRatio=aspectRatio(item),compositionRatio=Math.max(.62,Math.min(1.8,itemRatio));card.className="card"+(item._anchor?" anchor":"")+(state.selected.has(item.path)?" selected":"");card.style.setProperty("--ratio",compositionRatio+" / 1");card.dataset.ratio=String(itemRatio);placeCard(card,index);card.dataset.index=index;card.dataset.path=item.path;const media=document.createElement("div");media.className="card-media";const img=document.createElement("img");img.alt="";img.loading=isScrollLayout()&&index>11?"lazy":"eager";img.decoding="async";if(index<3)img.fetchPriority="high";img.addEventListener("load",()=>card.classList.add("loaded"),{once:true});img.addEventListener("error",()=>card.classList.add("loaded"),{once:true});const animated=item.media_kind&&item.media_kind!=="image";img.src=(animated||isScrollLayout())?source(item,false):source(item,true);media.append(img);card.append(media);
+    function cardFor(item,index){const card=document.createElement("article"),itemRatio=aspectRatio(item),compositionRatio=Math.max(.62,Math.min(1.8,itemRatio));card.className="card"+(item._anchor?" anchor":"")+(state.selected.has(item.path)?" selected":"");card.style.setProperty("--ratio",compositionRatio+" / 1");card.dataset.ratio=String(itemRatio);placeCard(card,index);card.dataset.index=index;card.dataset.path=item.path;const media=document.createElement("div");media.className="card-media";const img=document.createElement("img");img.alt="";img.loading="eager";img.decoding="async";if(index<3)img.fetchPriority="high";img.addEventListener("load",()=>card.classList.add("loaded"),{once:true});img.addEventListener("error",()=>card.classList.add("loaded"),{once:true});const animated=item.media_kind&&item.media_kind!=="image";img.src=animated?source(item,false):source(item,true);media.append(img);card.append(media);
       if(state.selectMode){const check=document.createElement("span");check.className="check";check.textContent=state.selected.has(item.path)?"✓":"";card.append(check)}
       const open=document.createElement("button");open.className="card-open";open.type="button";open.ariaLabel=(item._anchor?"Open ":"Explore from ")+basename(item.path);open.addEventListener("click",event=>activateItem(item,index,event));card.append(open);return card}
     function currentPageItems(){if(isAllResultsLayout())return state.mode==="image"?[state.anchor,...state.items].filter(Boolean):state.items;const size=pageSize();if(state.mode==="home")return state.items.slice(0,size);if(state.mode==="image"){const start=state.page*size;return [state.anchor].concat(state.items.slice(start,start+size)).filter(Boolean)}const start=state.page*size;return state.items.slice(start,start+size)}
     function updatePager(){if(state.mode==="home"||isAllResultsLayout()){pageUI.root.hidden=true;return}const size=pageSize(),total=Math.max(1,Math.ceil(state.items.length/size));state.page=Math.min(state.page,total-1);pageUI.root.hidden=total<=1;pageUI.count.textContent=String(state.page+1).padStart(2,"0")+" / "+String(total).padStart(2,"0");pageUI.prev.disabled=state.page===0;pageUI.next.disabled=state.page===total-1}
-    function appendRiver(items,indexOffset){const stream=document.createElement("div");stream.className="river-stream";el.gallery.append(stream);const available=el.gallery.getBoundingClientRect().width,gap=innerWidth<=800?8:12,target=innerWidth<=800?148:210;let row=[],sum=0;const commit=last=>{if(!row.length)return;const fitted=(available-gap*(row.length-1))/sum,height=last?Math.min(target,fitted):fitted,rowEl=document.createElement("div");rowEl.className="river-row";rowEl.style.setProperty("--river-height",height+"px");row.forEach(({card,ratio})=>{card.style.setProperty("--river-width",ratio*height+"px");card.style.setProperty("--river-height",height+"px");rowEl.append(card)});stream.append(rowEl);row=[];sum=0};items.forEach((item,index)=>{const card=cardFor(item,index+indexOffset),ratio=Number(card.dataset.ratio)||1;row.push({card,ratio});sum+=ratio;if((available-gap*(row.length-1))/sum<=target)commit(false)});commit(true)}
-
     function fieldView(){return state.fieldViews[state.mode==="home"?"home":"search"]}
     function resetFieldView(kind){Object.assign(state.fieldViews[kind],{x:0,y:0,zoom:1})}
     function fieldHash(path,salt){let value=2166136261^(salt||0);for(const char of path||"")value=Math.imul(value^char.charCodeAt(0),16777619);return (value>>>0)/4294967295}
@@ -537,7 +475,7 @@
     function resetActiveField(){Object.assign(fieldView(),{x:0,y:0,zoom:1});requestFieldDraw()}
     function renderField(){el.gallery.replaceChildren();fieldUI.viewport.hidden=false;field.scene=buildFieldScene(state.displayItems);field.hover=-1;requestAnimationFrame(()=>{resizeField();requestFieldDraw()})}
 
-    function renderInitial(){state.displayItems=currentPageItems();if(activeLayout()==="field"){renderField();updatePager();return}fieldUI.viewport.hidden=true;if(field.frame){cancelAnimationFrame(field.frame);field.frame=0}if(field.drag){if(fieldUI.canvas.hasPointerCapture(field.drag.id))fieldUI.canvas.releasePointerCapture(field.drag.id);field.drag=null;fieldUI.canvas.classList.remove("dragging");fieldUI.canvas.style.cursor="grab"}el.gallery.replaceChildren();if(!isScrollLayout()){const frag=document.createDocumentFragment();state.displayItems.forEach((item,index)=>frag.append(cardFor(item,index)));el.gallery.append(frag);updatePager();return}let start=0;if(state.displayItems[0]?._anchor){const strip=document.createElement("div");strip.className="query-anchor-strip";strip.append(cardFor(state.displayItems[0],0));el.gallery.append(strip);start=1}const results=state.displayItems.slice(start);if(activeLayout()==="river")appendRiver(results,start);else{const stream=document.createElement("div");stream.className="contact-stream";results.forEach((item,index)=>stream.append(cardFor(item,index+start)));el.gallery.append(stream)}updatePager()}
+    function renderInitial(){state.displayItems=currentPageItems();if(activeLayout()==="field"){renderField();updatePager();return}fieldUI.viewport.hidden=true;if(field.frame){cancelAnimationFrame(field.frame);field.frame=0}if(field.drag){if(fieldUI.canvas.hasPointerCapture(field.drag.id))fieldUI.canvas.releasePointerCapture(field.drag.id);field.drag=null;fieldUI.canvas.classList.remove("dragging");fieldUI.canvas.style.cursor="grab"}el.gallery.replaceChildren();const frag=document.createDocumentFragment();state.displayItems.forEach((item,index)=>frag.append(cardFor(item,index)));el.gallery.append(frag);updatePager()}
     function changePage(delta){if(isAllResultsLayout())return;const size=pageSize(),total=Math.max(1,Math.ceil(state.items.length/size)),next=Math.max(0,Math.min(total-1,state.page+delta));if(next===state.page)return;state.page=next;renderInitial()}
 
     async function loadHome(){cancel();resetFieldView("home");if(state.anchorObjectUrl){URL.revokeObjectURL(state.anchorObjectUrl);state.anchorObjectUrl=""}state.anchor=null;state.query="";state.trail=[];state.reranker=null;state.lastTime=null;state.page=0;state.homeTemplate=(state.homeTemplate+1)%homeTemplates.length;resetSelection();renderTrail();el.input.value="";if(!state.loaded){showEmpty("Add a folder","Choose a folder to begin.","Choose folder");return}setMode("loading");el.loadingText.textContent="Loading images…";try{const response=await fetch("/api/random?count=48",{cache:"no-store"}),data=await response.json();if(!response.ok||data.error)throw new Error(data.error||"Could not load images");state.items=data.images||[];setMode("home");configure();renderInitial()}catch(error){showEmpty("No images",error.message,"Try again")}}
