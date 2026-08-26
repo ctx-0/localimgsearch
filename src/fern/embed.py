@@ -23,8 +23,8 @@ from PIL import Image, ImageOps
 from tqdm import tqdm
 from transformers import AutoModel, AutoProcessor
 
-from localimgsearch.media import DEFAULT_POLICY, SamplingPolicy, extract_visual_units
-from localimgsearch.reranker import NoOpReranker, Reranker, SearchCandidate
+from fern.media import DEFAULT_POLICY, SamplingPolicy, extract_visual_units
+from fern.reranker import NoOpReranker, Reranker, SearchCandidate
 
 AVAILABLE_MODELS = [
     "openai/clip-vit-base-patch32",
@@ -1102,9 +1102,9 @@ def list_available_models():
         print(f"  {model:<60} {model_type:<10}")
     print()
     print("Examples:")
-    print("  localimg /path/to/images                    # Index images")
-    print("  localimg /path/to/images 'red car'          # Search after indexing")
-    print("  localimg /path/to/images sunset --top-k 20  # Search with more results")
+    print("  fern /path/to/images                    # Index images")
+    print("  fern /path/to/images 'red car'          # Search after indexing")
+    print("  fern /path/to/images sunset --top-k 20  # Search with more results")
 
 
 def main():
@@ -1183,7 +1183,7 @@ def main():
 
     # Check if we have any images
     if searcher.get_stats()["total_images"] == 0:
-        print("No images indexed. Specify a folder to embed: localimg <folder>")
+        print("No images indexed. Specify a folder to embed: fern <folder>")
         sys.exit(1)
 
     # Search

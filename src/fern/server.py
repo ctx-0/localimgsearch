@@ -1,4 +1,4 @@
-"""FastAPI server for LocalImg Search with ChromaDB backend."""
+"""FastAPI server for Fern with a ChromaDB backend."""
 
 import argparse
 import os
@@ -18,17 +18,17 @@ from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 import uvicorn
 
-import localimgsearch
-from localimgsearch.embed import (
+import fern
+from fern.embed import (
     AVAILABLE_MODELS,
     CHROMA_DB_PATH,
     DEFAULT_MODEL,
     LocalImageSearch,
 )
-from localimgsearch.reranker import DEFAULT_MODEL as DEFAULT_RERANKER_MODEL
-from localimgsearch.reranker import NoOpReranker, Qwen3VLReranker, SearchCandidate
+from fern.reranker import DEFAULT_MODEL as DEFAULT_RERANKER_MODEL
+from fern.reranker import NoOpReranker, Qwen3VLReranker, SearchCandidate
 
-app = FastAPI(title="LocalImg Search", version="2.0.0")
+app = FastAPI(title="Fern", version="2.0.0")
 
 # Add CORS middleware
 app.add_middleware(
@@ -40,7 +40,7 @@ app.add_middleware(
 )
 
 # Templates - check package directory first, then current directory
-PACKAGE_DIR = Path(localimgsearch.__file__).parent.parent
+PACKAGE_DIR = Path(fern.__file__).parent
 TEMPLATE_DIRS = [
     PACKAGE_DIR / "templates",
     Path.cwd() / "templates",
@@ -593,7 +593,7 @@ def main():
 
     model_name = args.model
 
-    print("Starting CLIP Image Search...")
+    print("Starting Fern...")
     print(f"   Retrieval model: {args.model}")
     if args.reranker:
         print(f"   Reranker model: {args.reranker}")

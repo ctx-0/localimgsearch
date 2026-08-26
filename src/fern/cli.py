@@ -1,16 +1,16 @@
-"""CLI entry point for LocalImg Search."""
+"""CLI entry point for Fern."""
 
 import argparse
 import sys
 
-from localimgsearch.embed import (
+from fern.embed import (
     CHROMA_DB_PATH,
     DEFAULT_MODEL,
     LocalImageSearch,
     list_available_models,
 )
-from localimgsearch.reranker import DEFAULT_MODEL as DEFAULT_RERANKER_MODEL
-from localimgsearch.reranker import Qwen3VLReranker
+from fern.reranker import DEFAULT_MODEL as DEFAULT_RERANKER_MODEL
+from fern.reranker import Qwen3VLReranker
 
 
 def _reranker(args):
@@ -30,7 +30,7 @@ def cmd_embed(args):
     
     if not args.folder:
         print("Error: Folder path required")
-        print("Usage: localimg embed <folder> [options]")
+        print("Usage: fern embed <folder> [options]")
         sys.exit(1)
     
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -71,7 +71,7 @@ def cmd_search(args):
     
     if not args.query:
         print("Error: Search query required")
-        print("Usage: localimg search <query> [options]")
+        print("Usage: fern search <query> [options]")
         sys.exit(1)
     
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -94,7 +94,7 @@ def cmd_search(args):
     stats = searcher.get_stats()
     if stats["total_images"] == 0:
         print(f"No images indexed for model: {args.model}")
-        print(f"Run: localimg embed <folder> --model {args.model}")
+        print(f"Run: fern embed <folder> --model {args.model}")
         sys.exit(1)
     
     # Search
@@ -137,7 +137,7 @@ def cmd_stats(args):
         print(f"  Last indexed: {stats['last_indexed']}")
 
 
-def cmd_ui(args):
+def cmd_serve(args):
     """Launch the web UI."""
     import torch
     
@@ -146,7 +146,7 @@ def cmd_ui(args):
     if device == "cpu":
         print("[WARNING] Running on CPU - this will be slow. Consider using a CUDA-enabled PyTorch for GPU acceleration.")
     
-    from localimgsearch.server import main as web_main
+    from fern.server import main as web_main
     
     # Pass args to server
     import sys
@@ -169,18 +169,18 @@ def cmd_ui(args):
 def main():
     """Main entry point with subcommands."""
     parser = argparse.ArgumentParser(
-        description="LocalImg - AI-powered local image search with CLIP",
+        description="Fern - AI-powered local image search with CLIP",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  localimg embed /path/to/images              # Index images
-  localimg embed /path/to/images --reindex    # Force reindex
-  localimg embed /path/to/images --batch 32   # Larger batch size
-  localimg search "red car"                   # Search images
-  localimg search sunset --top-k 20           # Search with more results
-  localimg stats                              # Show database stats
-  localimg ui                                 # Open web UI
-  localimg ui --port 8080                     # UI on custom port
+  fern embed /path/to/images              # Index images
+  fern embed /path/to/images --reindex    # Force reindex
+  fern embed /path/to/images --batch 32   # Larger batch size
+  fern search "red car"                   # Search images
+  fern search sunset --top-k 20           # Search with more results
+  fern stats                              # Show database stats
+  fern serve                              # Open web UI
+  fern serve --port 8080                  # UI on custom port
         """
     )
     
@@ -267,37 +267,37 @@ Examples:
     )
     stats_parser.set_defaults(func=cmd_stats)
     
-    # ui subcommand
-    ui_parser = subparsers.add_parser(
-        "ui",
+    # serve subcommand
+    serve_parser = subparsers.add_parser(
+        "serve",
         help="Launch web UI",
         description="Start the web interface for visual search."
     )
-    ui_parser.add_argument(
+    serve_parser.add_argument(
         "--port",
         "-p",
         type=int,
         default=5000,
         help="Port to run on (default: 5000)",
     )
-    ui_parser.add_argument(
+    serve_parser.add_argument(
         "--host",
         default="127.0.0.1",
         help="Host to bind to (default: 127.0.0.1)",
     )
-    ui_parser.add_argument(
+    serve_parser.add_argument(
         "--reranker",
         nargs="?",
         const=DEFAULT_RERANKER_MODEL,
         help=f"Enable multimodal reranking (default model: {DEFAULT_RERANKER_MODEL})",
     )
-    ui_parser.add_argument(
+    serve_parser.add_argument(
         "--rerank-limit",
         type=int,
         default=30,
         help="Maximum candidates reranked (default: 30)",
     )
-    ui_parser.set_defaults(func=cmd_ui)
+    serve_parser.set_defaults(func=cmd_serve)
     
     args = parser.parse_args()
     
